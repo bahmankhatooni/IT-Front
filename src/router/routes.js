@@ -1,12 +1,33 @@
 const routes = [
+  // مسیر ورود
+  {
+    path: '/login',
+    component: () => import('pages/LoginPage.vue'),
+  },
+
+  // مسیر پیش‌فرض: ریدایرکت به صفحه لاگین
+  {
+    path: '/',
+    redirect: '/login',
+  },
+
+  // مسیرهای اصلی با layout
   {
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    children: [
+      { path: 'dashboard', component: () => import('pages/DashboardPage.vue') },
+      { path: 'cities', component: () => import('pages/CitiesPage.vue') },
+      { path: 'branches', component: () => import('pages/BranchesPage.vue') },
+      { path: 'employees', component: () => import('pages/EmployeesPage.vue') },
+      { path: 'computers', component: () => import('pages/ComputersPage.vue') },
+      { path: 'printers', component: () => import('pages/PrintersPage.vue') },
+      { path: 'scanners', component: () => import('pages/ScannersPage.vue') },
+      { path: 'reports', component: () => import('pages/ReportsPage.vue') },
+    ],
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  // مسیر catch-all برای صفحات ناموجود
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
