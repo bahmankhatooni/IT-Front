@@ -347,8 +347,9 @@ async function loadBranchesByCity() {
   try {
     const res = await api.get('/branches', { params: { city_id: selectedCity.value } })
     branches.value = res.data
-    // فقط کارمندها رو پاک کن، employee_id رو نگه دار
+    // لیست کارمندها رو هم پاک کن
     employees.value = []
+    form.value.employee_id = null
   } catch (err) {
     console.error('خطا در دریافت شعبات حوزه:', err)
   }
@@ -356,6 +357,7 @@ async function loadBranchesByCity() {
 
 async function loadEmployeesByBranch() {
   if (!selectedBranch.value) return
+
   try {
     const res = await api.get('/employees', { params: { branch_id: selectedBranch.value } })
     const newEmployees = res.data.map(emp => ({
@@ -363,16 +365,24 @@ async function loadEmployeesByBranch() {
       full_name: `${emp.fname} ${emp.lname}`
     }))
 
-    // کارمندهای جدید رو اضافه کن بدون پاک کردن کارمند فعلی
-    newEmployees.forEach(newEmp => {
-      if (!employees.value.find(emp => emp.id === newEmp.id)) {
-        employees.value.push(newEmp)
+    // ابتدا لیست کارمندها رو کاملاً پاک کن
+    employees.value = []
+
+    // سپس کارمندهای جدید رو اضافه کن
+    employees.value = [...newEmployees]
+
+    // اگر در حالت ویرایش هستیم و کارمند فعلی در لیست جدید نیست، اضافه‌اش کن
+    if (isEdit.value && form.value.employee_id) {
+      const currentEmployeeExists = newEmployees.find(emp => emp.id === form.value.employee_id)
+      if (!currentEmployeeExists) {
+        await loadSpecificEmployee(form.value.employee_id)
       }
-    })
+    }
   } catch (err) {
     console.error('خطا در دریافت کارمندان شعبه:', err)
   }
 }
+
 
 // تابع برای لود اطلاعات یک کارمند خاص
 async function loadSpecificEmployee(employeeId) {
@@ -395,6 +405,9 @@ async function loadBranchesForUser() {
   try {
     const res = await api.get('/branches')
     branches.value = res.data
+    // لیست کارمندها رو هم پاک کن
+    employees.value = []
+    form.value.employee_id = null
   } catch (err) {
     console.error('خطا در دریافت شعبات:', err)
   }
