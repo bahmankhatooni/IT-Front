@@ -1,39 +1,36 @@
-// src/boot/axios.js
+// boot/axios.js
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
-  withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 })
 
-// فقط یک‌بار CSRF بگیریم، نه در هر درخواست
-let csrfInitialized = false
+// اضافه کردن interceptor برای مدیریت خطاهای 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // اگر توکن منقضی شده یا نامعتبر است
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      delete api.defaults.headers.Authorization
 
-api.interceptors.request.use(async (config) => {
-  // اگر هنوز csrf نگرفتیم و درخواست login/register نیست
-  if (!csrfInitialized && !['/login', '/register'].includes(config.url)) {
-    await axios.get('http://localhost:8000/sanctum/csrf-cookie', {
-      withCredentials: true,
-    })
-    csrfInitialized = true
+      // redirect به صفحه login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+      }
+    }
+    return Promise.reject(error)
   }
-
-  // اگر توکن در localStorage هست، در همه درخواست‌ها بفرست
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-
-  return config
-})
+)
 
 export default boot(({ app }) => {
   app.config.globalProperties.$axios = axios
   app.config.globalProperties.$api = api
 })
 
-export { axios, api }
+export { api }

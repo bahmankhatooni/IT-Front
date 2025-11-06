@@ -60,6 +60,12 @@ const errorMessage = ref('')
 const login = async () => {
   errorMessage.value = ''
 
+  // اعتبارسنجی سمت کلاینت
+  if (!username.value || !password.value) {
+    errorMessage.value = 'لطفاً نام کاربری و رمز عبور را وارد کنید'
+    return
+  }
+
   try {
     // فقط یک بار csrf بگیریم
     await api.get('/sanctum/csrf-cookie')
@@ -76,14 +82,20 @@ const login = async () => {
     // تنظیم هدر Authorization برای axios
     api.defaults.headers.Authorization = `Bearer ${res.data.token}`
 
-    router.push('/dashboard')
+    // بررسی اگر از صفحه خاصی به login آمده بودیم، به همان صفحه برگردیم
+    const redirectPath = router.currentRoute.value.query.redirect || '/dashboard'
+    router.push(redirectPath)
   } catch (err) {
+    console.error('خطای لاگین:', err)
+
     if (err.response && err.response.data) {
       if (err.response.data.errors) {
         const firstError = Object.values(err.response.data.errors)[0][0]
         errorMessage.value = firstError
       } else if (err.response.data.message) {
         errorMessage.value = err.response.data.message
+      } else {
+        errorMessage.value = 'خطا در ارتباط با سرور'
       }
     } else {
       errorMessage.value = 'خطا در ارتباط با سرور'

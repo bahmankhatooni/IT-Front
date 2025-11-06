@@ -5,8 +5,11 @@
       <q-toolbar>
         <q-btn flat dense round icon="menu" @click="rightDrawerOpen = !rightDrawerOpen" />
         <q-toolbar-title style="text-align: center"
-          >سامانه مدیریت تجهیزات سخت‌افزاری</q-toolbar-title
-        >
+        >سامانه مدیریت تجهیزات سخت‌افزاری
+          <div v-if="user" class="text-caption">
+            ({{ user.name }} - {{ user.role?.name === 'admin' ? 'مدیر سیستم' : 'کاربر شهرستان' }})
+          </div>
+        </q-toolbar-title>
       </q-toolbar>
     </q-header>
 
@@ -24,7 +27,7 @@
           <q-item-section>داشبورد</q-item-section>
         </q-item>
 
-        <q-item   v-if="user?.role_id === 1"  to="/cities" clickable v-ripple active-class="bg-primary text-white">
+        <q-item v-if="user?.role_id === 1" to="/cities" clickable v-ripple active-class="bg-primary text-white">
           <q-item-section>شهرستان‌ها</q-item-section>
         </q-item>
 
@@ -52,7 +55,8 @@
           <q-item-section>گزارشات</q-item-section>
         </q-item>
 
-        <q-item to="/login" clickable v-ripple active-class="bg-primary text-white">
+        <!-- منوی خروج -->
+        <q-item clickable v-ripple active-class="bg-primary text-white" @click="logout">
           <q-item-section>خروج</q-item-section>
         </q-item>
       </q-list>
@@ -66,17 +70,33 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { api } from 'boot/axios'
 
-import { ref, onMounted } from 'vue';
+const router = useRouter()
 const rightDrawerOpen = ref(true)
-const user = ref(null);
+const user = ref(null)
+
+// تابع خروج ساده
+const logout = () => {
+  // پاک کردن داده‌های localStorage
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+
+  // پاک کردن هدر Authorization
+  delete api.defaults.headers.Authorization
+
+  // هدایت به صفحه login
+  router.push('/login')
+}
 
 onMounted(() => {
-  const userData = localStorage.getItem('user');
+  const userData = localStorage.getItem('user')
   if (userData) {
-    user.value = JSON.parse(userData);
+    user.value = JSON.parse(userData)
   }
-});
+})
 </script>
 
 <style scoped>
