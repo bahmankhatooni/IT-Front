@@ -1,13 +1,13 @@
 <template>
-  <q-page class="branches-page" padding>
+  <q-page class="users-page" padding>
     <q-card class="main-card">
       <!-- هدر کارت -->
       <q-card-section class="card-header">
         <div class="header-content">
-          <q-icon name="business" class="header-icon" />
+          <q-icon name="admin_panel_settings" class="header-icon" />
           <div class="header-text">
-            <div class="text-h5">مدیریت شعبات</div>
-            <div class="text-subtitle">مدیریت و ویرایش اطلاعات شعبات</div>
+            <div class="text-h5">مدیریت کاربران سیستم</div>
+            <div class="text-subtitle">مدیریت و ویرایش اطلاعات کاربران سیستم</div>
           </div>
         </div>
       </q-card-section>
@@ -19,10 +19,10 @@
         <div class="action-bar">
           <q-btn
             color="primary"
-            label="افزودن شعبه جدید"
+            label="افزودن کاربر جدید"
             @click="openAddDialog"
             class="add-btn"
-            icon="add"
+            icon="person_add"
           />
           <q-space />
           <q-input
@@ -30,8 +30,8 @@
             outlined
             debounce="500"
             v-model="search"
-            placeholder="جستجوی نام شعبه..."
-            @update:model-value="loadBranches"
+            placeholder="جستجوی نام کاربری یا نام..."
+            @update:model-value="loadUsers"
             class="search-input"
           >
             <template v-slot:append>
@@ -40,20 +40,28 @@
           </q-input>
         </div>
 
-        <!-- جدول شعبات -->
+        <!-- جدول کاربران -->
         <q-table
-          :rows="branches"
+          :rows="users"
           :columns="columns"
           row-key="id"
           flat
           bordered
           :loading="loading"
-          class="branches-table"
+          class="users-table"
           rows-per-page-label="تعداد در صفحه"
           :pagination="{ rowsPerPage: 10 }"
         >
           <template v-slot:loading>
             <q-inner-loading showing color="primary" />
+          </template>
+
+          <template v-slot:body-cell-role="props">
+            <q-td align="center" class="role-cell">
+              <q-badge :color="getRoleColor(props.row.role_id)" class="role-badge">
+                {{ getRoleName(props.row.role_id) }}
+              </q-badge>
+            </q-td>
           </template>
 
           <template v-slot:body-cell-actions="props">
@@ -87,8 +95,8 @@
       <q-card class="dialog-card">
         <q-card-section class="dialog-header">
           <div class="dialog-title">
-            <q-icon :name="isEdit ? 'edit' : 'add'" class="dialog-icon" />
-            {{ isEdit ? 'ویرایش شعبه' : 'افزودن شعبه جدید' }}
+            <q-icon :name="isEdit ? 'edit' : 'person_add'" class="dialog-icon" />
+            {{ isEdit ? 'ویرایش کاربر' : 'افزودن کاربر جدید' }}
           </div>
         </q-card-section>
         <!-- پیام خطا -->
@@ -105,40 +113,133 @@
           {{ errorMessage }}
         </q-banner>
         <q-card-section class="dialog-body">
+          <div class="row q-col-gutter-md">
+            <div class="col-6">
+              <q-input
+                v-model="form.fname"
+                label="نام"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="person" class="field-icon" />
+                </template>
+              </q-input>
+            </div>
+            <div class="col-6">
+              <q-input
+                v-model="form.lname"
+                label="نام خانوادگی"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="people" class="field-icon" />
+                </template>
+              </q-input>
+            </div>
+          </div>
+
           <q-input
-            v-model="form.code"
-            label="کد شعبه"
+            v-model="form.username"
+            label="نام کاربری"
             outlined
             dense
             class="form-field"
             :input-style="{ textAlign: 'right', direction: 'rtl' }"
           >
             <template v-slot:prepend>
-              <q-icon name="tag" class="field-icon" />
+              <q-icon name="badge" class="field-icon" />
             </template>
           </q-input>
 
-          <q-input
-            v-model="form.name"
-            label="نام شعبه"
-            outlined
-            dense
-            class="form-field"
-            :input-style="{ textAlign: 'right', direction: 'rtl' }"
-          >
-            <template v-slot:prepend>
-              <q-icon name="business" class="field-icon" />
-            </template>
-          </q-input>
+          <div class="row q-col-gutter-md">
+            <div class="col-6">
+              <q-input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                label="کلمه عبور"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="lock" class="field-icon" />
+                </template>
+                <template v-slot:append>
+                  <q-icon
+                    :name="showPassword ? 'visibility_off' : 'visibility'"
+                    class="cursor-pointer"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </q-input>
+            </div>
+            <div class="col-6">
+              <q-input
+                v-model="form.phone"
+                label="تلفن"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="phone" class="field-icon" />
+                </template>
+              </q-input>
+            </div>
+          </div>
 
-          <!-- فقط برای ادمین -->
+          <div class="row q-col-gutter-md">
+            <div class="col-6">
+              <q-input
+                v-model="form.email"
+                label="ایمیل"
+                type="email"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="email" class="field-icon" />
+                </template>
+              </q-input>
+            </div>
+            <div class="col-6">
+              <q-select
+                v-model="form.role_id"
+                :options="roleOptions"
+                option-value="id"
+                option-label="name"
+                label="نقش کاربری"
+                outlined
+                dense
+                emit-value
+                map-options
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="admin_panel_settings" class="field-icon" />
+                </template>
+              </q-select>
+            </div>
+          </div>
+
+          <!-- انتخاب حوزه -->
           <q-select
-            v-if="user?.role_id === 1"
             v-model="selectedCity"
             :options="cities"
             option-value="id"
             option-label="name"
-            label="انتخاب شهرستان"
+            label="انتخاب حوزه قضایی"
             outlined
             dense
             emit-value
@@ -156,7 +257,7 @@
           <q-btn
             :label="isEdit ? 'ویرایش' : 'ثـبــت'"
             color="primary"
-            @click="saveBranch"
+            @click="saveUser"
             class="submit-btn"
             :loading="loading"
           />
@@ -179,7 +280,7 @@
         </q-card-section>
 
         <q-card-section class="delete-body">
-          آیا از حذف شعبه "{{ selectedBranch.name }}" اطمینان دارید؟
+          آیا از حذف کاربر "{{ selectedUser.fname }} {{ selectedUser.lname }}" اطمینان دارید؟
           <div class="delete-warning">این عمل غیرقابل بازگشت است!</div>
         </q-card-section>
 
@@ -187,7 +288,7 @@
           <q-btn
             label="تـأیید حذف"
             color="negative"
-            @click="deleteBranch"
+            @click="deleteUser"
             class="delete-confirm-btn"
           />
           <q-btn
@@ -207,7 +308,7 @@ import { ref, onMounted } from 'vue'
 import { api } from 'boot/axios'
 
 const search = ref('')
-const branches = ref([])
+const users = ref([])
 const cities = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
@@ -215,28 +316,45 @@ const user = ref(null)
 const dialog = ref(false)
 const deleteDialog = ref(false)
 const isEdit = ref(false)
-const selectedBranch = ref(null)
+const selectedUser = ref(null)
 const selectedCity = ref(null)
-const form = ref({ id: null, code: '', name: '', city_id: null })
+const showPassword = ref(false)
+
+const roleOptions = [
+  { id: 1, name: 'مدیر سیستم' },
+  { id: 2, name: 'کاربر حوزه' }
+]
+
+const form = ref({
+  id: null,
+  fname: '',
+  lname: '',
+  username: '',
+  password: '',
+  phone: '',
+  email: '',
+  role_id: 2,
+  city_id: null
+})
 
 const columns = [
   {
-    name: 'code',
-    label: 'کد شعبه',
-    field: 'code',
+    name: 'username',
+    label: 'نام کاربری',
+    field: 'username',
     align: 'center',
     sortable: true
   },
   {
-    name: 'name',
-    label: 'نام شعبه',
-    field: 'name',
+    name: 'role',
+    label: 'نقش',
+    field: 'role_id',
     align: 'center',
     sortable: true
   },
   {
     name: 'city',
-    label: 'نام حوزه',
+    label: 'حوزه قضایی',
     field: row => row.city?.name || '-',
     align: 'center',
     sortable: true
@@ -246,19 +364,29 @@ const columns = [
     label: 'عملیات',
     align: 'center',
     sortable: false
-  },
+  }
 ]
 
-async function loadBranches() {
+// توابع کمکی
+const getRoleName = (roleId) => {
+  const role = roleOptions.find(r => r.id === roleId)
+  return role ? role.name : 'نامشخص'
+}
+
+const getRoleColor = (roleId) => {
+  return roleId === 1 ? 'primary' : 'secondary'
+}
+
+async function loadUsers() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const res = await api.get('/branches', {
+    const res = await api.get('/users', {
       params: { search: search.value || '' }
     })
-    branches.value = res.data
+    users.value = res.data
   } catch (err) {
-    errorMessage.value = err.response?.data?.message || 'خطا در دریافت داده‌ها'
+    errorMessage.value = err.response?.data?.message || 'خطا در دریافت اطلاعات'
   } finally {
     loading.value = false
   }
@@ -275,53 +403,79 @@ async function loadCities() {
 
 function openAddDialog() {
   isEdit.value = false
-  form.value = { id: null, code: '', name: '', city_id: null }
+  form.value = {
+    id: null,
+    fname: '',
+    lname: '',
+    username: '',
+    password: '',
+    phone: '',
+    email: '',
+    role_id: 2,
+    city_id: null
+  }
   selectedCity.value = null
   errorMessage.value = ''
-  if (user.value?.role_id === 1) loadCities()
+  showPassword.value = false
+
+  loadCities()
   dialog.value = true
 }
 
 function openEditDialog(row) {
   isEdit.value = true
-  form.value = { id: row.id, code: row.code, name: row.name, city_id: row.city_id }
+  form.value = {
+    ...row,
+    password: '' // برای ویرایش، رمز عبور خالی می‌ماند مگر اینکه کاربر بخواهد تغییر دهد
+  }
   selectedCity.value = row.city_id
   errorMessage.value = ''
-  if (user.value?.role_id === 1) loadCities()
+  showPassword.value = false
+
+  loadCities()
   dialog.value = true
 }
 
-async function saveBranch() {
-  if (user.value?.role_id === 1) {
-    form.value.city_id = selectedCity.value
-  }
+async function saveUser() {
+  form.value.city_id = selectedCity.value
 
-  if (!form.value.code || !form.value.name) {
-    errorMessage.value = 'لطفاً تمام فیلدها را پر کنید'
+  // اعتبارسنجی فیلدهای ضروری
+  if (!form.value.fname || !form.value.lname || !form.value.username || !form.value.role_id || !form.value.city_id) {
+    errorMessage.value = 'لطفاً فیلدهای ضروری (نام، نام خانوادگی، نام کاربری، نقش و حوزه) را پر کنید'
     return
   }
 
-  // اگر city_user هست، city_id خودش تنظیم میشه
-  if (user.value?.role_id !== 1) {
-    form.value.city_id = user.value.city_id
+  // برای کاربر جدید، رمز عبور الزامی است
+  if (!isEdit.value && !form.value.password) {
+    errorMessage.value = 'برای کاربر جدید، کلمه عبور الزامی است'
+    return
   }
 
   const submitData = {
-    code: form.value.code,
-    name: form.value.name,
+    fname: form.value.fname,
+    lname: form.value.lname,
+    username: form.value.username,
+    phone: form.value.phone,
+    email: form.value.email,
+    role_id: form.value.role_id,
     city_id: form.value.city_id
+  }
+
+  // اگر رمز عبور وارد شده، آن را هم اضافه کن
+  if (form.value.password) {
+    submitData.password = form.value.password
   }
 
   try {
     if (isEdit.value) {
-      await api.put(`/branches/${form.value.id}`, submitData)
+      await api.put(`/users/${form.value.id}`, submitData)
     } else {
-      await api.post('/branches', submitData)
+      await api.post('/users', submitData)
     }
     dialog.value = false
-    loadBranches()
+    loadUsers()
   } catch (err) {
-    console.error('خطا در ثبت شعبه:', err)
+    console.error('خطا در ثبت کاربر:', err)
     if (err.response?.status === 422 && err.response.data.errors) {
       errorMessage.value = Object.values(err.response.data.errors).flat().join('، ')
     } else {
@@ -331,14 +485,14 @@ async function saveBranch() {
 }
 
 function confirmDelete(row) {
-  selectedBranch.value = row
+  selectedUser.value = row
   deleteDialog.value = true
 }
 
-async function deleteBranch() {
+async function deleteUser() {
   try {
-    await api.delete(`/branches/${selectedBranch.value.id}`)
-    loadBranches()
+    await api.delete(`/users/${selectedUser.value.id}`)
+    loadUsers()
     deleteDialog.value = false
   } catch (err) {
     errorMessage.value = err.response?.data?.message || 'خطا در حذف'
@@ -350,16 +504,17 @@ onMounted(() => {
   if (userData) {
     user.value = JSON.parse(userData)
   }
-  loadBranches()
+  loadUsers()
 })
 </script>
 
 <style scoped>
-.branches-page {
+.users-page {
   background: transparent;
   font-family: Vazirmatn, serif;
 }
 
+/* استایل‌های مشابه EmployeePage */
 .main-card {
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(25, 118, 210, 0.1);
@@ -423,17 +578,17 @@ onMounted(() => {
   border-radius: 10px;
 }
 
-.branches-table {
+.users-table {
   border-radius: 12px;
   overflow: hidden;
 }
 
-.branches-table :deep(.q-table__top) {
+.users-table :deep(.q-table__top) {
   background: #f8fbff;
   border-bottom: 1px solid #e3f2fd;
 }
 
-.branches-table :deep(.q-table__control) {
+.users-table :deep(.q-table__control) {
   direction: rtl;
 }
 
@@ -453,8 +608,18 @@ onMounted(() => {
   background: rgba(25, 118, 210, 0.1);
 }
 
+.role-cell {
+  padding: 8px;
+}
+
+.role-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
 .dialog-card {
-  min-width: 400px;
+  min-width: 500px;
   border-radius: 16px;
   overflow: hidden;
 }

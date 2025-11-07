@@ -1,27 +1,39 @@
 <template>
-  <q-page padding>
-    <!-- پیام خطا -->
-    <q-banner v-if="errorMessage" class="bg-red text-white q-mb-md" rounded dense style="text-align: center;">
-      {{ errorMessage }}
-    </q-banner>
-    <q-card>
-      <!-- هدر -->
-      <q-card-section class="bg-blue-2">
-        <div class="text-h6 text-center">مدیریت تجهیزات سخت‌افزاری</div>
+  <q-page class="computers-page" padding>
+
+    <q-card class="main-card">
+      <!-- هدر کارت -->
+      <q-card-section class="card-header">
+        <div class="header-content">
+          <q-icon name="desktop_windows" class="header-icon" />
+          <div class="header-text">
+            <div class="text-h5">مدیریت تجهیزات سخت‌افزاری</div>
+            <div class="text-subtitle">مدیریت و ویرایش اطلاعات کامپیوترها</div>
+          </div>
+        </div>
       </q-card-section>
+
       <q-separator />
-      <q-card-section>
-        <div class="row items-center q-mb-md q-gutter-sm">
-          <q-btn color="positive" label="افزودن سخت‌افزار جدید" @click="openAddDialog" />
+
+      <q-card-section class="content-section">
+        <!-- بخش اقدامات و جستجو -->
+        <div class="action-bar">
+          <q-btn
+            color="primary"
+            label="افزودن سخت‌افزار جدید"
+            @click="openAddDialog"
+            class="add-btn"
+            icon="add"
+          />
           <q-space />
           <q-input
             dense
             outlined
             debounce="500"
             v-model="search"
-            placeholder="نام دستگاه یا مشخصات"
+            placeholder="جستجوی نام دستگاه یا مشخصات..."
             @update:model-value="loadComputers"
-            style="width: 250px"
+            class="search-input"
           >
             <template v-slot:append>
               <q-icon name="search" />
@@ -29,7 +41,7 @@
           </q-input>
         </div>
 
-        <!-- جدول سخت‌افزارها -->
+        <!-- جدول کامپیوترها -->
         <q-table
           :rows="computers"
           :columns="columns"
@@ -37,16 +49,24 @@
           flat
           bordered
           :loading="loading"
+          class="computers-table"
           rows-per-page-label="تعداد در صفحه"
+          :pagination="{ rowsPerPage: 10 }"
         >
+          <template v-slot:loading>
+            <q-inner-loading showing color="primary" />
+          </template>
+
           <template v-slot:body-cell-actions="props">
-            <q-td align="center">
+            <q-td align="center" class="actions-cell">
               <q-btn
                 dense
                 flat
                 icon="visibility"
                 color="info"
                 @click="openViewDialog(props.row)"
+                class="action-btn"
+                size="12px"
               />
               <q-btn
                 dense
@@ -54,6 +74,8 @@
                 icon="edit"
                 color="primary"
                 @click="openEditDialog(props.row)"
+                class="action-btn"
+                size="12px"
               />
               <q-btn
                 dense
@@ -61,6 +83,8 @@
                 icon="delete"
                 color="negative"
                 @click="confirmDelete(props.row)"
+                class="action-btn"
+                size="12px"
               />
             </q-td>
           </template>
@@ -68,16 +92,29 @@
       </q-card-section>
     </q-card>
 
-    <!-- دیالوگ افزودن / ویرایش -->
+    <!-- دیالوگ افزودن/ویرایش -->
     <q-dialog v-model="dialog" persistent>
-      <q-card style="min-width: 600px; border-radius: 12px; padding: 16px;">
-        <q-card-section style="background-color: #bbdefb !important; border-radius: 12px; color: rgb(15 71 126)">
-          <div class="text-h6 text-center" >
+      <q-card class="dialog-card computer-dialog">
+        <q-card-section class="dialog-header">
+          <div class="dialog-title">
+            <q-icon :name="isEdit ? 'edit' : 'add'" class="dialog-icon" />
             {{ isEdit ? 'ویرایش سخت‌افزار' : 'افزودن سخت‌افزار جدید' }}
           </div>
         </q-card-section>
-
-        <q-card-section>
+        <!-- پیام خطا -->
+        <q-banner
+          style="color: red;"
+          v-if="errorMessage"
+          class="error-banner q-mb-md"
+          rounded
+          dense
+        >
+          <template v-slot:avatar>
+            <q-icon name="error" />
+          </template>
+          {{ errorMessage }}
+        </q-banner>
+        <q-card-section class="dialog-body">
           <!-- انتخاب حوزه برای ادمین -->
           <q-select
             v-if="user?.role_id === 1"
@@ -90,9 +127,14 @@
             dense
             emit-value
             map-options
-            class="q-mt-md"
+            class="form-field"
+            :input-style="{ textAlign: 'right', direction: 'rtl' }"
             @update:model-value="loadBranchesByCity"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="location_city" class="field-icon" />
+            </template>
+          </q-select>
 
           <!-- انتخاب شعبه -->
           <q-select
@@ -105,9 +147,14 @@
             dense
             emit-value
             map-options
-            class="q-mt-md"
+            class="form-field"
+            :input-style="{ textAlign: 'right', direction: 'rtl' }"
             @update:model-value="loadEmployeesByBranch"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="business" class="field-icon" />
+            </template>
+          </q-select>
 
           <!-- انتخاب کارمند -->
           <q-select
@@ -120,8 +167,12 @@
             dense
             emit-value
             map-options
-            class="q-mt-md"
+            class="form-field"
+            :input-style="{ textAlign: 'right', direction: 'rtl' }"
           >
+            <template v-slot:prepend>
+              <q-icon name="person" class="field-icon" />
+            </template>
             <template v-slot:selected>
               <span v-if="form.employee_id && currentEmployeeName">
                 {{ currentEmployeeName }}
@@ -135,66 +186,148 @@
             </template>
           </q-select>
 
-          <div class="row q-col-gutter-md" style="margin-top: 0px" >
+          <div class="row q-col-gutter-md form-row">
             <div class="col-6">
-              <q-input v-model="form.name" label="نام دستگاه" outlined dense />
+              <q-input
+                v-model="form.name"
+                label="نام دستگاه"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="computer" class="field-icon" />
+                </template>
+              </q-input>
             </div>
             <div class="col-6">
-              <q-input v-model="form.monitor" label="مانیتور" outlined dense />
+              <q-input
+                v-model="form.monitor"
+                label="مانیتور"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="tv" class="field-icon" />
+                </template>
+              </q-input>
             </div>
             <div class="col-6">
-              <q-input v-model="form.mb" label="مادربرد" outlined dense />
+              <q-input
+                v-model="form.mb"
+                label="مادربرد"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="memory" class="field-icon" />
+                </template>
+              </q-input>
             </div>
             <div class="col-6">
-              <q-input v-model="form.cpu" label="پردازنده" outlined dense />
+              <q-input
+                v-model="form.cpu"
+                label="پردازنده"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="speed" class="field-icon" />
+                </template>
+              </q-input>
             </div>
             <div class="col-6">
-              <q-input v-model="form.ram" label="رم" outlined dense />
+              <q-input
+                v-model="form.ram"
+                label="رم"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="sd_card" class="field-icon" />
+                </template>
+              </q-input>
             </div>
             <div class="col-6">
-              <q-input v-model="form.os" label="سیستم عامل" outlined dense />
+              <q-input
+                v-model="form.os"
+                label="سیستم عامل"
+                outlined
+                dense
+                class="form-field"
+                :input-style="{ textAlign: 'right', direction: 'rtl' }"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="settings" class="field-icon" />
+                </template>
+              </q-input>
             </div>
           </div>
-          <div class="row q-col-gutter-md" style="margin-top: 0px" >
+
+          <div class="row q-col-gutter-md checkbox-row" style="margin-top: -35px;">
             <div class="col-6">
-              <div class="row items-center">
+              <div class="checkbox-container">
                 <q-checkbox
                   v-model="form.hard"
                   label="هارد SSD"
                   :true-value="true"
                   :false-value="false"
+                  class="custom-checkbox"
+                  color="primary"
                 />
               </div>
             </div>
-
             <div class="col-6">
-              <div class="row items-center">
+              <div class="checkbox-container">
                 <q-checkbox
                   v-model="form.antivirus"
                   label="آنتی‌ویروس"
                   :true-value="true"
                   :false-value="false"
+                  class="custom-checkbox"
+                  color="primary"
                 />
               </div>
             </div>
           </div>
         </q-card-section>
 
-        <div class="row justify-around q-gutter-sm q-mt-sm">
-          <q-btn :label="isEdit ? 'ویرایش' : 'ثـبــت'" color="positive" @click="saveComputer" />
-          <q-btn label="انصراف" color="grey" v-close-popup />
-        </div>
+        <q-card-actions align="center" class="dialog-actions" style="margin-top: -35px;">
+          <q-btn
+            :label="isEdit ? 'ویرایش' : 'ثـبــت'"
+            color="primary"
+            @click="saveComputer"
+            class="submit-btn"
+            :loading="loading"
+          />
+          <q-btn
+            label="انصراف"
+            color="grey"
+            v-close-popup
+            class="cancel-btn"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- دیالوگ نمایش اطلاعات -->
     <q-dialog v-model="viewDialog">
-      <q-card style="min-width: 500px; border-radius: 12px; padding: 16px;">
-        <q-card-section style="background-color: #e3f2fd !important; border-radius: 12px; color: rgb(15 71 126)">
-          <div class="text-h6 text-center">مشاهده اطلاعات سخت‌افزار</div>
+      <q-card class="view-dialog-card">
+        <q-card-section class="view-header">
+          <q-icon name="visibility" color="info" size="32px" />
+          <div class="view-title">مشاهده اطلاعات سخت‌افزار</div>
         </q-card-section>
 
-        <q-card-section>
+        <q-card-section class="view-body">
           <div class="row q-col-gutter-md">
             <div class="col-6">
               <q-input v-model="viewData.name" label="نام دستگاه" outlined dense readonly />
@@ -232,22 +365,44 @@
           </div>
         </q-card-section>
 
-        <div class="row justify-center q-mt-sm">
-          <q-btn label="بستن" color="grey" v-close-popup />
-        </div>
+        <q-card-actions align="center" class="view-actions">
+          <q-btn
+            label="بستن"
+            color="grey"
+            v-close-popup
+            class="close-btn"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <!-- دیالوگ حذف -->
+    <!-- دیالوگ تایید حذف -->
     <q-dialog v-model="deleteDialog">
-      <q-card style="min-width: 300px; border-radius: 12px; padding: 16px;">
-        <q-card-section>
-          آیا از حذف سخت‌افزار "{{ selectedComputer.name }}" اطمینان دارید؟
+      <q-card class="delete-dialog-card">
+        <q-card-section class="delete-header">
+          <q-icon name="warning" color="orange" size="32px" />
+          <div class="delete-title">تأیید حذف</div>
         </q-card-section>
-        <div class="row justify-around q-gutter-sm q-mt-sm">
-          <q-btn label="تـأیید" color="negative" @click="deleteComputer" />
-          <q-btn label="انصراف" color="grey" v-close-popup />
-        </div>
+
+        <q-card-section class="delete-body">
+          آیا از حذف سخت‌افزار "{{ selectedComputer.name }}" اطمینان دارید؟
+          <div class="delete-warning">این عمل غیرقابل بازگشت است!</div>
+        </q-card-section>
+
+        <q-card-actions align="center" class="delete-actions">
+          <q-btn
+            label="تـأیید حذف"
+            color="negative"
+            @click="deleteComputer"
+            class="delete-confirm-btn"
+          />
+          <q-btn
+            label="انصراف"
+            color="grey"
+            v-close-popup
+            class="delete-cancel-btn"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
   </q-page>
@@ -283,9 +438,9 @@ const form = ref({
   mb: '',
   cpu: '',
   ram: '',
-  hard: false, // تغییر به boolean
+  hard: false,
   os: '',
-  antivirus: false // تغییر به boolean
+  antivirus: false
 })
 
 const viewData = ref({
@@ -310,12 +465,47 @@ const currentEmployeeName = computed(() => {
 })
 
 const columns = [
-  { name: 'name', label: 'نام دستگاه', field: 'name', align: 'center' },
-  { name: 'employee', label: 'کارمند', field: row => row.employee ? `${row.employee.fname} ${row.employee.lname}` : '-', align: 'center' },
-  { name: 'branch', label: 'شعبه', field: row => row.branch?.name || '-', align: 'center' },
-  { name: 'city', label: 'حوزه قضایی', field: row => row.city?.name || '-', align: 'center' },
-  { name: 'os', label: 'سیستم عامل', field: 'os', align: 'center' },
-  { name: 'actions', label: 'عملیات', align: 'center' }
+  {
+    name: 'name',
+    label: 'نام دستگاه',
+    field: 'name',
+    align: 'center',
+    sortable: true
+  },
+  {
+    name: 'employee',
+    label: 'کارمند',
+    field: row => row.employee ? `${row.employee.fname} ${row.employee.lname}` : '-',
+    align: 'center',
+    sortable: true
+  },
+  {
+    name: 'branch',
+    label: 'شعبه',
+    field: row => row.branch?.name || '-',
+    align: 'center',
+    sortable: true
+  },
+  {
+    name: 'city',
+    label: 'حوزه قضایی',
+    field: row => row.city?.name || '-',
+    align: 'center',
+    sortable: true
+  },
+  {
+    name: 'os',
+    label: 'سیستم عامل',
+    field: 'os',
+    align: 'center',
+    sortable: true
+  },
+  {
+    name: 'actions',
+    label: 'عملیات',
+    align: 'center',
+    sortable: false
+  }
 ]
 
 async function loadComputers() {
@@ -347,7 +537,6 @@ async function loadBranchesByCity() {
   try {
     const res = await api.get('/branches', { params: { city_id: selectedCity.value } })
     branches.value = res.data
-    // لیست کارمندها رو هم پاک کن
     employees.value = []
     form.value.employee_id = null
   } catch (err) {
@@ -365,13 +554,9 @@ async function loadEmployeesByBranch() {
       full_name: `${emp.fname} ${emp.lname}`
     }))
 
-    // ابتدا لیست کارمندها رو کاملاً پاک کن
     employees.value = []
-
-    // سپس کارمندهای جدید رو اضافه کن
     employees.value = [...newEmployees]
 
-    // اگر در حالت ویرایش هستیم و کارمند فعلی در لیست جدید نیست، اضافه‌اش کن
     if (isEdit.value && form.value.employee_id) {
       const currentEmployeeExists = newEmployees.find(emp => emp.id === form.value.employee_id)
       if (!currentEmployeeExists) {
@@ -383,13 +568,11 @@ async function loadEmployeesByBranch() {
   }
 }
 
-
 // تابع برای لود اطلاعات یک کارمند خاص
 async function loadSpecificEmployee(employeeId) {
   try {
     const res = await api.get(`/employees/${employeeId}`)
     const employee = res.data
-    // چک کن که قبلاً اضافه نشده باشه
     if (!employees.value.find(emp => emp.id === employee.id)) {
       employees.value.push({
         ...employee,
@@ -405,7 +588,6 @@ async function loadBranchesForUser() {
   try {
     const res = await api.get('/branches')
     branches.value = res.data
-    // لیست کارمندها رو هم پاک کن
     employees.value = []
     form.value.employee_id = null
   } catch (err) {
@@ -443,17 +625,15 @@ function openAddDialog() {
 function openEditDialog(row) {
   isEdit.value = true
 
-  // ابتدا فرم رو با داده‌های فعلی پر کن
   form.value = {
     ...row,
-    hard: row.hard == 1 || row.hard === true, // تبدیل به boolean
+    hard: row.hard == 1 || row.hard === true,
     antivirus: row.antivirus == 1 || row.antivirus === true
   }
 
   selectedCity.value = row.city_id
   selectedBranch.value = row.branch_id
 
-  // کارمند فعلی رو فوراً به لیست اضافه کن
   employees.value = []
   if (row.employee) {
     employees.value.push({
@@ -462,21 +642,18 @@ function openEditDialog(row) {
       lname: row.employee.lname,
       full_name: `${row.employee.fname} ${row.employee.lname}`
     })
-    form.value.employee_id = row.employee.id // مطمئن شو employee_id ست شده
+    form.value.employee_id = row.employee.id
   }
 
   errorMessage.value = ''
 
-  // دیالوگ رو فوراً باز کن تا کاربر داده‌ها رو ببینه
   dialog.value = true
 
-  // سپس داده‌های اضافی رو در پس‌زمینه لود کن
   setTimeout(() => {
     if (user.value?.role_id === 1) {
       loadCities().then(() => {
         loadBranchesByCity().then(() => {
           loadEmployeesByBranch().then(() => {
-            // بعد از لود کارمندان، مطمئن شو کارمند فعلی در لیست هست
             if (row.employee_id && !employees.value.find(emp => emp.id === row.employee_id)) {
               loadSpecificEmployee(row.employee_id)
             }
@@ -486,7 +663,6 @@ function openEditDialog(row) {
     } else {
       loadBranchesForUser().then(() => {
         loadEmployeesByBranch().then(() => {
-          // بعد از لود کارمندان، مطمئن شو کارمند فعلی در لیست هست
           if (row.employee_id && !employees.value.find(emp => emp.id === row.employee_id)) {
             loadSpecificEmployee(row.employee_id)
           }
@@ -521,32 +697,22 @@ async function saveComputer() {
   }
   form.value.branch_id = selectedBranch.value
 
-  // اعتبارسنجی فیلدهای ضروری
   if (!form.value.name || !form.value.branch_id || !form.value.employee_id) {
     errorMessage.value = 'لطفاً فیلدهای نام دستگاه، شعبه و کارمند را پر کنید'
     return
   }
 
-  // تبدیل boolean به عدد برای ارسال به سرور
   const submitData = {
     ...form.value,
     hard: form.value.hard ? 1 : 0,
     antivirus: form.value.antivirus ? 1 : 0
   }
 
-  const formData = new FormData()
-  Object.keys(submitData).forEach(key => {
-    if (submitData[key] !== null) {
-      formData.append(key, submitData[key])
-    }
-  })
-
   try {
     if (isEdit.value) {
-      formData.append('_method', 'PUT')
-      await api.post(`/computers/${form.value.id}`, formData)
+      await api.put(`/computers/${form.value.id}`, submitData)
     } else {
-      await api.post('/computers', formData)
+      await api.post('/computers', submitData)
     }
     dialog.value = false
     loadComputers()
@@ -585,7 +751,346 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.bg-blue-2 {
-  background: #cce5ff;
+.computers-page {
+  background: transparent;
+  font-family: Vazirmatn, serif;
+}
+
+.main-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(25, 118, 210, 0.1);
+  border: 1px solid #e3f2fd;
+  background: white;
+}
+
+.card-header {
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  padding: 24px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 36px;
+  color: white;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-h5 {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.text-subtitle {
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.content-section {
+  padding: 24px;
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.add-btn {
+  border-radius: 10px;
+  padding: 8px 20px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.search-input {
+  min-width: 280px;
+  border-radius: 10px;
+}
+
+.computers-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.computers-table :deep(.q-table__top) {
+  background: #f8fbff;
+  border-bottom: 1px solid #e3f2fd;
+}
+
+.computers-table :deep(.q-table__control) {
+  direction: rtl;
+}
+
+.actions-cell {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-btn {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+  background: rgba(25, 118, 210, 0.1);
+}
+
+.computer-dialog {
+  min-width: 700px;
+}
+
+.dialog-card {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dialog-header {
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  color: white;
+  padding: 20px;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.dialog-icon {
+  font-size: 24px;
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.form-field {
+  margin-bottom: 16px;
+  border-radius: 10px;
+}
+
+.form-field :deep(.q-field__control) {
+  border-radius: 10px;
+}
+
+.field-icon {
+  color: #42a5f5;
+}
+
+.form-row {
+  margin-bottom: 16px;
+}
+
+.checkbox-row {
+  margin-top: 16px;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.custom-checkbox {
+  margin: 8px 0;
+}
+
+.custom-checkbox :deep(.q-checkbox__inner) {
+  font-size: 20px;
+}
+
+.dialog-actions {
+  padding: 16px 24px 24px;
+  gap: 12px;
+}
+
+.submit-btn, .cancel-btn {
+  min-width: 120px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.view-dialog-card {
+  min-width: 600px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.view-header {
+  background: linear-gradient(135deg, #42a5f5 0%, #64b5f6 100%);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #bbdefb;
+}
+
+.view-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.view-body {
+  padding: 24px;
+}
+
+.view-actions {
+  padding: 16px 24px 24px;
+}
+
+.close-btn {
+  min-width: 120px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.delete-dialog-card {
+  min-width: 350px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.delete-header {
+  background: #fff3e0;
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #ffcc80;
+}
+
+.delete-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #f57c00;
+  margin-top: 8px;
+}
+
+.delete-body {
+  padding: 24px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.delete-warning {
+  color: #f44336;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+.delete-actions {
+  padding: 16px 24px 24px;
+  gap: 12px;
+}
+
+.delete-confirm-btn, .delete-cancel-btn {
+  min-width: 120px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.error-banner {
+  border-radius: 10px;
+  border: 1px solid #ffcdd2;
+}
+
+@media (max-width: 768px) {
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    min-width: auto;
+  }
+
+  .computer-dialog {
+    min-width: 90vw;
+    margin: 10px;
+  }
+
+  .view-dialog-card {
+    min-width: 90vw;
+    margin: 10px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-row .col-6,
+  .checkbox-row .col-6 {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-section {
+    padding: 16px;
+  }
+
+  .card-header {
+    padding: 20px 16px;
+  }
+
+  .dialog-body {
+    padding: 20px 16px;
+  }
+
+  .view-body {
+    padding: 20px 16px;
+  }
+}
+
+.main-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:deep(.q-field--outlined .q-field__control) {
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+:deep(.q-field--outlined .q-field__control:hover) {
+  border-color: #42a5f5;
+}
+
+:deep(.q-field--outlined.q-field--focused .q-field__control) {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
 }
 </style>
