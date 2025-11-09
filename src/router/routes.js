@@ -21,6 +21,7 @@ const routes = [
       { path: 'dashboard', component: () => import('pages/DashboardPage.vue') },
       { path: 'cities', component: () => import('pages/CitiesPage.vue') },
       { path: 'users', component: () => import('pages/UsersPage.vue') },
+      { path: 'user-settings', component: () => import('pages/UserSettings.vue') },
       { path: 'branches', component: () => import('pages/BranchesPage.vue') },
       { path: 'employees', component: () => import('pages/EmployeesPage.vue') },
       { path: 'computers', component: () => import('pages/ComputersPage.vue') },
